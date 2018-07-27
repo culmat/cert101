@@ -1,34 +1,35 @@
-import static java.io.File.separator;
-import static java.util.regex.Pattern.quote;
+import static common.CertHelper.currentJREsCaCerts;
+import static common.CertHelper.loadCaCerts;
+import static common.CertHelper.loadX509;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.net.URL;
 import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import common.CertHelper;
+
 public class Client {
-	public static String jre() {
-		RuntimeMXBean mxbean = ManagementFactory.getPlatformMXBean(RuntimeMXBean.class);
-		return mxbean.getBootClassPath().split(quote(separator)+"lib"+quote(separator)+"\\w+\\.jar",2)[0];
-	}
 	
 	public static void main(String[] args) throws Exception {
-		File cacerts = new File(jre(),"lib/security/cacerts");
-		cacerts = new File("cacertsWithSpark");
-		KeyStore ks = KeyStore.getInstance("JKS");
-		ks.load(new FileInputStream(cacerts), "changeit".toCharArray());
+		File cacerts = currentJREsCaCerts();
+		//cacerts = new File("cacertsWithSpark");
+		KeyStore ks = loadCaCerts(cacerts, "changeit");
 		
-//		X509Certificate cert =   (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream("spark.crt"));
+		FileInputStream inputStream = new FileInputStream("spark.crt");
+		X509Certificate cert = loadX509(inputStream);
+		
+		CertHelper.store(cert, new File("sparkBla.cer"));
+		
 //		ks.setCertificateEntry("spark", cert);
 		
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
@@ -49,7 +50,8 @@ public class Client {
 			System.out.println(inputLine);
 		in.close();
 		
-		ks.store(new FileOutputStream("cacertsWithSpark"), "changeit".toCharArray());
+		//ks.store(new FileOutputStream("cacertsWithSpark"), "changeit".toCharArray());
 	}
+
 
 }
