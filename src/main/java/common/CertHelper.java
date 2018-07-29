@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -66,11 +68,50 @@ public class CertHelper {
 			throw new IllegalArgumentException("Expected 1 cert but got " + cchain.length);
 		return cchain[0];
 	}
+	
+	public static Certificate getTlsCertificateFromProxy(String proxyHost, int proxyPort)
+			throws NoSuchAlgorithmException, KeyManagementException, IOException, UnknownHostException, SSLPeerUnverifiedException {
+		// see https://stackoverflow.com/questions/5783832/socks5-proxy-using-sslsocket
+		System.setProperty("javax.net.ssl.trustStore", "clienttrust");
+		SSLContext ctx = SSLContext.getInstance("TLS");
+		X509TrustManager tm = new X509TrustManager() {
+			public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+			}
 
-	public static KeyStore loadCaCerts(File cacerts, String password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+			public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+			}
+
+			public X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
+		};
+		ctx.init(null, new TrustManager[] { tm }, null);
+		SSLSocketFactory ssf = ctx.getSocketFactory();
+
+		String host = "example.com";
+		int port = 443;
+		
+		
+		InetSocketAddress proxyAddr = new InetSocketAddress(proxyHost, proxyPort);
+        Socket underlying = new Socket(new Proxy(Proxy.Type.SOCKS, proxyAddr));
+        underlying.connect(new InetSocketAddress(host, port));
+        Socket socket = (SSLSocket) ssf.createSocket(
+                underlying,
+                proxyHost,
+                proxyPort,
+                true);
+		
+		
+		Certificate[] cchain = ((SSLSocket) socket).getSession().getPeerCertificates();
+		if (cchain.length != 1)
+			throw new IllegalArgumentException("Expected 1 cert but got " + cchain.length);
+		return cchain[0];
+	}
+
+	public static KeyStore loadCaCerts(File cacerts, char[] password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		KeyStore ks = KeyStore.getInstance("JKS");
 		try (FileInputStream in = new FileInputStream(cacerts)) {
-			ks.load(in, password.toCharArray());
+			ks.load(in, password);
 			return ks;
 		}
 	}
