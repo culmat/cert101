@@ -77,7 +77,6 @@ public class CertHelper {
 
 		return getCertificate(socket);
 	}
-
 	
 	public static Certificate getTlsCertificateFromProxy(String proxyHost, int proxyPort)
 			throws NoSuchAlgorithmException, KeyManagementException, IOException, UnknownHostException, SSLPeerUnverifiedException {
@@ -85,7 +84,6 @@ public class CertHelper {
 
 		String host = "example.com";
 		int port = 443;
-		
 		
 		InetSocketAddress proxyAddr = new InetSocketAddress(proxyHost, proxyPort);
         Socket underlying = new Socket(new Proxy(Proxy.Type.HTTP, proxyAddr));
@@ -98,8 +96,6 @@ public class CertHelper {
 		
         return getCertificate(socket);
 	}
-
-	
 
 	public static KeyStore loadCaCerts(File cacerts, char[] password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		KeyStore ks = KeyStore.getInstance("JKS");
