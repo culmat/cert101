@@ -53,13 +53,6 @@ public class CertHelper {
 		return ctx.getSocketFactory();
 	}
 	
-	private static Certificate getCertificate(SSLSocket socket) throws SSLPeerUnverifiedException {
-		Certificate[] cchain = (socket).getSession().getPeerCertificates();
-		if (cchain.length != 1)
-			throw new IllegalArgumentException("Expected 1 cert but got " + cchain.length);
-		return cchain[0];
-	}
-	
 	public static String jre() {
 		RuntimeMXBean mxbean = ManagementFactory.getPlatformMXBean(RuntimeMXBean.class);
 		return mxbean.getBootClassPath().split(quote(separator) + "lib" + quote(separator) + "\\w+\\.jar", 2)[0];
@@ -69,13 +62,13 @@ public class CertHelper {
 		return new File(jre(), "lib/security/cacerts");
 	}
 
-	public static Certificate getTlsCertificate(String hostName, int port)
+	public static Certificate[] getTlsCertificate(String hostName, int port)
 			throws NoSuchAlgorithmException, KeyManagementException, IOException, UnknownHostException, SSLPeerUnverifiedException {
 		SSLSocketFactory ssf = getPermissveSSLSocketFactory();
 		
 		SSLSocket socket = (SSLSocket) ssf.createSocket(hostName, port);
 
-		return getCertificate(socket);
+		return socket.getSession().getPeerCertificates();
 	}
 	
 	public static Certificate getTlsCertificateFromProxy(String proxyHost, int proxyPort)
@@ -94,7 +87,10 @@ public class CertHelper {
                 proxyPort,
                 true);
 		
-        return getCertificate(socket);
+        Certificate[] cchain = socket.getSession().getPeerCertificates();
+		if (cchain.length != 1)
+			throw new IllegalArgumentException("Expected 1 cert but got " + cchain.length);
+		return cchain[0];
 	}
 
 	public static KeyStore loadCaCerts(File cacerts, char[] password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {

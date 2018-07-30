@@ -59,7 +59,7 @@ public class SSLTest {
 	@Test
 	public void testWithCertFromServers() throws Exception {
 		KeyStore ks = loadCaCerts(currentJREsCaCerts(), "changeit".toCharArray());
-		Certificate cert = CertHelper.getTlsCertificate("localhost", port);
+		Certificate cert = CertHelper.getTlsCertificate("localhost", port)[0];
 		ks.setCertificateEntry("spark", cert);
 		
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
